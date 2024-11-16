@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum ItemType {
+  TOOL
+  MATERIAL
+}
+
+enum TransactionType {
+  ADD // Adding new tools/materials to a location
+  REMOVE // Removing tools/materials from a location (e.g., defective tools)
+  TRANSFER // Moving tools/materials between locations
+  USE // Using materials (consumption)
+}
+
+enum ToolStatus {
+  ACTIVE // Tool is in good condition
+  DEFECTIVE // Tool is defective
+  REPAIRED // Tool was repaired and is active again
+  RETIRED // Tool is no longer in use
+}
+
+// Updated User model
+model User {
+  id            Int           @id @default(autoincrement())
+  name          String
+  email         String        @unique
+  password      String
+  role          Role
+  isActive      Boolean       @default(true)
+  lastLogin     DateTime?
+  contactNumber String?
+  createdAt     DateTime      @default(now())
+  transactions  Transaction[] // One-to-many relation with transactions
+}
+
+// // model for site to tie locations together
+// model Site {
+//   id          Int        @id @default(autoincrement())
+//   name        String
+//   description String?
+//   locations   Location[]
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+// }
+
+// Model for Locations
+model Location {
+  id               Int           @id @default(autoincrement())
+  name             String        @unique // Ensures no duplicate names
+  address          String?
+  tools            Tool[] // One-to-many relation with tools
+  transactionsFrom Transaction[] @relation("fromLocationTransactions") // Track incoming transactions
+  transactionsTo   Transaction[] @relation("toLocationTransactions") // Track outgoing transactions
+  inventories      Inventory[] // One-to-many relation with Inventory
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  Site             Site?         @relation(fields: [siteId], references: [id])
+  siteId           Int?
+}
+
+// After
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  tools       Tool[]
+  materials   Material[]
+  categoryId  Int? // Optional foreign key reference for category
+}
+
+// Model for Tools
+model Tool {
+  id           Int           @id @default(autoincrement())
+  name         String
+  serialNumber String? // Optional serial number for tracking
+  cost         Decimal? // Cost of the tool
+  imageUrl     String? // URL for the tool's image
+  locationId   Int // Foreign key for the current location
+  location     Location      @relation(fields: [locationId], references: [id])
+  status       ToolStatus    @default(ACTIVE) // Status of the tool
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[] // Track movements and status changes
+  categoryId   Int? // Optional foreign key reference for category
+  category     Category?     @relation(fields: [categoryId], references: [id])
+}
+
+// Model for Materials
+model Material {
+  id          Int         @id @default(autoincrement())
+  name        String
+  imageUrl    String? // URL for the tool's image
+  costPerUnit Decimal? // Cost per unit
+  inventory   Inventory[] // One-to-many relation with Inventory
+  categoryId  Int? // Optional foreign key reference for category
+  category    Category?   @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// Used to track materials units stored in each location
+model Inventory {
+  id           Int           @id @default(autoincrement())
+  quantity     Int // Quantity of the material at the location
+  materialId   Int // Foreign key to Material
+  material     Material      @relation(fields: [materialId], references: [id])
+  locationId   Int // Foreign key to Location
+  location     Location      @relation(fields: [locationId], references: [id])
+  transactions Transaction[] // Track movements and adjustments in inventory
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// Model for Transactions (for tools and materials)
+model Transaction {
+  id              Int             @id @default(autoincrement())
+  userId          Int // User performing the transaction
+  user            User            @relation(fields: [userId], references: [id]) // Relationship to the User model
+  transactionType TransactionType // Type of transaction (Add, Transfer, Use, Remove)
+  quantity        Int? // Quantity of material (if applicable)
+  transactionDate DateTime        @default(now()) // When the transaction occurred
+  description     String? // Optional description
+  entityType      String // E.g., "Tool", "Material", "Location"
+  entityId        Int // ID of the entity affected (e.g., Tool ID or Material ID)
+
+  // Relationships
+  inventoryId    Int? // Foreign key for inventory (used for materials)
+  inventory      Inventory? @relation(fields: [inventoryId], references: [id])
+  toolId         Int? // Foreign key for tool (if applicable)
+  tool           Tool?      @relation(fields: [toolId], references: [id])
+  fromLocationId Int? // Location the material/tool is coming from (for transfers)
+  toLocationId   Int? // Location the material/tool is going to (for transfers)
+  fromLocation   Location?  @relation("fromLocationTransactions", fields: [fromLocationId], references: [id])
+  toLocation     Location?  @relation("toLocationTransactions", fields: [toLocationId], references: [id])
+}
