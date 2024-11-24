@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import * as toolServices from "../services/tool.services";
 import { Tool } from "@prisma/client";
-import {CreateToolDTO, UpdateToolDTO} from "../models/tool.models";
+import {CreateToolDTO, ToolWithRelations, UpdateToolDTO} from "../models/tool.models";
 import fs from 'fs';
 import path from 'path';
 
 export const getAllItems = async (req: Request, res: Response) => {
     try {
-        const tools: Tool[] = await toolServices.getAllTools();
+        const tools: ToolWithRelations[] = await toolServices.getAllTools();
         res.status(200).json(tools);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching items', error });
@@ -27,7 +27,7 @@ export const getToolsByLocation = async (req: Request, res: Response) => {
 export const getItemById = async (req: Request, res: Response) => {
     const itemId = parseInt(req.params.id);
     try {
-        const item = await toolServices.getToolById(itemId);
+        const item: ToolWithRelations = await toolServices.getToolById(itemId);
         if (item) {
             res.status(200).json(item);
         } else {

@@ -7,7 +7,12 @@ import {
     deleteMaterial,
     getMaterialsByCategory, createInventory, getInventoryByMaterialId, getInventoryByLocationId, deleteInventory
 } from "../services/materials.service";
-import {CreateInventoryDTO, CreateMaterialDTO, UpdateMaterialDTO} from "../models/material.models";
+import {
+    CreateInventoryDTO,
+    CreateMaterialDTO,
+    MaterialWithInventoryDTO,
+    UpdateMaterialDTO
+} from "../models/material.models";
 import fs from "fs";
 import path from "path";
 
@@ -84,7 +89,7 @@ export const getInventoryByLocationIdController = async (req: Request, res: Resp
 // Controller for fetching all materials
 export const getAllMaterialsController = async (req: Request, res: Response) => {
     try {
-        const materials = await getAllMaterials();
+        const materials: MaterialWithInventoryDTO[] = await getAllMaterials();
         res.status(200).json(materials);
     } catch (error) {
         res.status(500).json({ error: "Error fetching materials" });
@@ -95,7 +100,7 @@ export const getAllMaterialsController = async (req: Request, res: Response) => 
 export const getMaterialByIdController = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        const material = await getMaterialById(Number(id));
+        const material: MaterialWithInventoryDTO = await getMaterialById(Number(id));
         if (!material) {
             res.status(404).json({ error: "Material not found" });
         }

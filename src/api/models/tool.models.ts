@@ -1,4 +1,6 @@
 // DTO for creating a new item
+import {Category, Tool, Location} from "@prisma/client";
+
 export interface CreateToolDTO {
     name: string;               // Required name of the tool
     serialNumber?: string;      // Optional serial number for tracking
@@ -25,4 +27,9 @@ export enum ToolStatus {
     DEFECTIVE = 'DEFECTIVE',
     REPAIRED = 'REPAIRED',
     RETIRED = 'RETIRED',
+}
+
+export interface ToolWithRelations extends Tool {
+    location: Location;
+    category: Category | null;
 }

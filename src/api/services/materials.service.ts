@@ -1,27 +1,46 @@
 import { PrismaClient, Material } from "@prisma/client";
-import { CreateInventoryDTO, CreateMaterialDTO } from "../models/material.models";
+import {CreateInventoryDTO, CreateMaterialDTO, MaterialWithInventoryDTO} from "../models/material.models";
 
 const prisma = new PrismaClient();
 
 // ============ Material Operations ============ //
-
 // Create a new material
 export const createMaterial = async (materialData: CreateMaterialDTO) => {
     return prisma.material.create({
         data: materialData,
     });
 };
-
 // Fetch all materials
-export const getAllMaterials = async (): Promise<Material[]> => {
-    return prisma.material.findMany();
+export const getAllMaterials = async (): Promise<MaterialWithInventoryDTO[]> => {
+    const materials = await prisma.material.findMany({
+        include: {
+            category: true,
+            inventory: true,
+        },
+    });
+
+    return materials.map((material) => ({
+        ...material,
+        category: material.category || undefined, // Convert null to undefined
+        inventory: material.inventory.length ? material.inventory : undefined, // Handle empty inventory
+    }));
 };
 
 // Fetch a single material by ID
-export const getMaterialById = async (id: number): Promise<Material | null> => {
-    return prisma.material.findUnique({
+export const getMaterialById = async (id: number): Promise<MaterialWithInventoryDTO> => {
+    const material = await prisma.material.findUnique({
         where: { id },
+        include: {
+            category: true,
+            inventory: true,
+        },
     });
+
+    if (!material) {
+        throw new Error(`Material with ID ${id} not found`);
+    }
+
+    return material as MaterialWithInventoryDTO;
 };
 
 // Fetch materials by category ID
@@ -47,7 +66,6 @@ export const deleteMaterial = async (id: number) => {
 };
 
 // ============ Inventory Operations ============ //
-
 // Create a new inventory record
 export const createInventory = async (data: CreateInventoryDTO) => {
     return prisma.inventory.create({

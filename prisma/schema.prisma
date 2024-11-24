@@ -67,7 +67,6 @@ model Location {
   inventories      Inventory[] // One-to-many relation with Inventory
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  Site             Site?         @relation(fields: [siteId], references: [id])
   siteId           Int?
 }
 

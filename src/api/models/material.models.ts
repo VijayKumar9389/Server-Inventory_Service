@@ -1,3 +1,5 @@
+import {Category, Inventory, Material} from "@prisma/client";
+
 export interface CreateMaterialDTO {
     name: string;           // Name of the material (Required)
     costPerUnit?: number;   // Optional cost per unit (can be mapped to Decimal in the database)
@@ -21,4 +23,10 @@ export interface CreateInventoryDTO {
     materialId: number;
     locationId: number;
     quantity: number;
+}
+
+// Material with inventory details
+export interface MaterialWithInventoryDTO extends Material{
+    category?: Category;
+    inventory?: Inventory[];
 }
